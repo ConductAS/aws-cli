@@ -1,0 +1,118 @@
+
+ACCOUNT_NAME=$1
+export EC2_HOME=$PWD
+export AWS_RDS_HOME=$PWD
+export PATH=$PATH:$EC2_HOME/bin
+export EC2_URL=https://ec2.eu-west-1.amazonaws.com
+export RDS_URL=https://rds.eu-west-1.amazonaws.com
+
+
+function check_existence_of_java_home_variable {
+    if [[ ! $JAVA_HOME ]]; then
+		echo "JAVA_HOME environment variable must be set"
+		return -1
+    fi
+
+    if [[ ! -d $JAVA_HOME ]]; then
+		echo "$JAVA_HOME does not exist"
+		return -1
+    fi;
+}
+
+
+function check_existence_of_ec2_tools {
+    if [[ ! -e  $EC2_HOME/bin/ec2-cmd ]]; then
+		echo "WARNING: EC2 Tools not installed correctly. Did you run setup-aws-cli-tools.sh?"
+    fi
+
+    if [[ ! -e  $AWS_RDS_HOME/bin/rds ]]; then
+		echo "WARNING: RDS Tools not installed correctly. Did you run setup-aws-cli-tools.sh?"	
+    fi
+}
+
+function check_aws_account_setup {
+    if [[ $ACCOUNT_NAME == "" ]]; then
+		echo "Usage: . set-ec2-env <account name>"
+		return -1
+    fi
+
+    if [[ ! -d $EC2_HOME/accounts/$ACCOUNT_NAME ]]; then
+		echo "ERROR:Directory for account $account_name doesn't exist:"
+		echo "$EC2_HOME/accounts/$ACCOUNT_NAME"
+		return -1
+    fi
+   
+    ACCOUNT_DIR=$EC2_HOME/accounts/$ACCOUNT_NAME
+}
+
+function setup_X509-cert_for_account {
+    export EC2_PRIVATE_KEY=`ls $ACCOUNT_DIR/pk-*.pem`
+    export EC2_CERT=`ls $ACCOUNT_DIR/cert-*.pem`
+
+    if [[ ! -e $EC2_PRIVATE_KEY ]]; then
+		echo "X509 Certificate not found for $ACCOUNT"
+		return -1
+    fi
+
+    if [[ ! -e $EC2_CERT ]]; then
+        echo "X509 private key not found for $ACCOUNT"
+		return -1
+    fi
+
+}
+
+function setup_ssh_alias {
+	echo
+	echo "Created the following ssh aliases:"
+    
+	for f in $ACCOUNT_DIR/*-ssh.pem; do 
+		ident=`basename $f | sed  's/-ssh.pem//'`
+		alias ssh-$ACCOUNT_NAME-$ident="ssh -i $f"
+		echo "ssh-$ACCOUNT_NAME-$ident <host>"
+    done
+}
+
+function test_aws_connection {
+	cmd=$EC2_HOME/bin/ec2-describe-images
+	if [[ -e $cmd ]]; then
+		echo "Testing connection..."
+		if [[ `$cmd -o amazon` ]]; then
+			echo "Connection OK"
+			return 0
+		else
+			echo "ERROR: Connection failed"
+			return -1
+		fi
+	else
+		echo "ERROR: $cmd not found"
+		return -1;
+	fi
+}
+
+function display_info_header {
+    echo
+    echo "***************************************************************************"
+    echo "Setting upp EC2 and RDS for accessing the $ACCOUNT_NAME Amazon AWS account."
+	echo 
+
+}
+
+function display_info_footer {
+    echo "***************************************************************************"
+    echo
+}
+
+
+# Function calls
+display_info_header
+check_existence_of_java_home_variable &&
+check_aws_account_setup &&
+setup_X509-cert_for_account &&
+check_existence_of_ec2_tools &&
+test_aws_connection &&
+setup_ssh_alias 
+display_info_footer
+
+
+
+
