@@ -2,6 +2,7 @@
 # Example: . set-aws-env
 
 ACCOUNT_NAME=$1
+export ACTIVE_AWS_ACCOUNT=$ACCOUNT_NAME
 export EC2_HOME=$PWD
 export AWS_RDS_HOME=$PWD
 export PATH=$PATH:$EC2_HOME/bin
@@ -91,28 +92,10 @@ function setup_ssh_alias {
 	fi	
 }
 
-function test_aws_connection {
-	cmd=$EC2_HOME/bin/ec2-describe-images
-	if [[ -e $cmd ]]; then
-		echo "Testing connection..."
-		if [[ `$cmd -o amazon` ]]; then
-			echo "Connection OK"
-			return 0
-		else
-			echo "ERROR: Connection failed"
-			return -1
-		fi
-	else
-		echo "ERROR: $cmd not found"
-		return -1;
-	fi
-}
-
 function display_info_header {
     echo
     echo "***************************************************************************"
     echo "Setting upp EC2 and RDS for accessing the $ACCOUNT_NAME Amazon AWS account."
-	echo 
 
 }
 
@@ -129,7 +112,6 @@ check_existence_of_aws_cert_root_variable &&
 check_aws_account_keys &&
 setup_X509-cert_for_account &&
 check_existence_of_ec2_tools &&
-test_aws_connection &&
 setup_ssh_alias 
 display_info_footer
 
