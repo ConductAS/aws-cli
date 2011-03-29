@@ -1,2 +1,48 @@
+The goal of this project is to make it easier to manage EC2 and RDS for mulitiple AWS accounts by providing:
+
+* Script for installation of the AWS API Tools (command line)
+* Script for configuring environment variables and aliases
+
+Prerequisites 
+*************
+The Amazon AWS API Tools are Java based, thus Java must be installed and JAVA_HOME environment variable must be set.
+
+Getting started
+***************
+
+1) Install AWS API Tools by running:
+bash install-aws-cli-tools.sh
+(The script creates a tmp directory that can be removed when the script is completed.)
+
+
+2) Create a directory to store certificates and keys for your accounts. The directory should contain a subdirectory for each AWS accounts, which should contain X.509 cert and private key (and optional ssh keys) for the respective AWS account.
+$ mkdir -p accounts/account1
+$ cp <dir_for_downloaded_x.509_files>/*pem accounts/account1
+export AWS_CERT_ROOT=$PWD/accounts
+
+$ find accounts
+accounts
+accounts/account1
+accounts/account1/cert-LNEDCEVSV74CIPPYAFEWDINCTDPWRKKU.pem
+accounts/account1/pk-LNEDCEVSV74CIPPYAFEWDINCTDPWRKKU.pem
+
+
+3) Setup environment for a given AWS account:
 . set-aws-env
-More tk
+(Note: only source the environment file, do not execute it.)
+
+Example:
+$ . set-aws-env account1
+Setting upp EC2 and RDS for accessing the account1 Amazon AWS account.
+
+Testing connection...
+Connection OK
+
+What next?
+**********
+You should now be able to run the ec2 and rds command line tools. For more information, see:
+http://docs.amazonwebservices.com/AWSEC2/latest/UserGuide/index.html
+
+
+
+
