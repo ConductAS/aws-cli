@@ -1,3 +1,5 @@
+# This file should be sourced, not executed.
+# Example: . set-aws-env
 
 ACCOUNT_NAME=$1
 export EC2_HOME=$PWD
@@ -14,7 +16,19 @@ function check_existence_of_java_home_variable {
     fi
 
     if [[ ! -d $JAVA_HOME ]]; then
-		echo "$JAVA_HOME does not exist"
+		echo "$JAVA_HOME directory does not exist"
+		return -1
+    fi;
+}
+
+function check_existence_of_aws_cert_root_variable {
+    if [[ ! $AWS_CERT_ROOT ]]; then
+		echo "AWS_CERT_ROOT environment variable must be set"
+		return -1
+    fi
+
+    if [[ ! -d $AWS_CERT_ROOT ]]; then
+		echo "$AWS_CERT_ROOT directory does not exist"
 		return -1
     fi;
 }
@@ -30,19 +44,20 @@ function check_existence_of_ec2_tools {
     fi
 }
 
-function check_aws_account_setup {
+function check_aws_account_keys {
     if [[ $ACCOUNT_NAME == "" ]]; then
 		echo "Usage: . set-ec2-env <account name>"
 		return -1
     fi
 
-    if [[ ! -d $EC2_HOME/accounts/$ACCOUNT_NAME ]]; then
+	ACCOUNT_DIR=$AWS_CERT_ROOT/$ACCOUNT_NAME
+    if [[ ! -d $ACCOUNT_DIR ]]; then
 		echo "ERROR:Directory for account $account_name doesn't exist:"
-		echo "$EC2_HOME/accounts/$ACCOUNT_NAME"
+		echo "$ACCOUNT_DIR"
 		return -1
     fi
    
-    ACCOUNT_DIR=$EC2_HOME/accounts/$ACCOUNT_NAME
+    
 }
 
 function setup_X509-cert_for_account {
@@ -62,14 +77,18 @@ function setup_X509-cert_for_account {
 }
 
 function setup_ssh_alias {
-	echo
-	echo "Created the following ssh aliases:"
-    
-	for f in $ACCOUNT_DIR/*-ssh.pem; do 
-		ident=`basename $f | sed  's/-ssh.pem//'`
-		alias ssh-$ACCOUNT_NAME-$ident="ssh -i $f"
-		echo "ssh-$ACCOUNT_NAME-$ident <host>"
-    done
+	ssh_key_files=$(ls $ACCOUNT_DIR/*-ssh.pem 2> /dev/null)
+
+	if [[ $ssh_key_files ]]; then
+		echo
+		echo "Created the following ssh aliases:"
+
+		for f in $ACCOUNT_DIR/*-ssh.pem; do 
+			ident=`basename $f | sed  's/-ssh.pem//'`
+			alias ssh-$ACCOUNT_NAME-$ident="ssh -i $f"
+			echo "ssh-$ACCOUNT_NAME-$ident <host>"
+	    done
+	fi	
 }
 
 function test_aws_connection {
@@ -106,7 +125,8 @@ function display_info_footer {
 # Function calls
 display_info_header
 check_existence_of_java_home_variable &&
-check_aws_account_setup &&
+check_existence_of_aws_cert_root_variable &&
+check_aws_account_keys &&
 setup_X509-cert_for_account &&
 check_existence_of_ec2_tools &&
 test_aws_connection &&
